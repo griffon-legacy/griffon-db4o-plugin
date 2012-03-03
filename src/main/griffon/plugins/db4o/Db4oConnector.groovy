@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------
    griffon-db4o plugin
-   Copyright (C) 2010 Andres Almiray
+   Copyright (C) 2010-2012 Andres Almiray
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -16,6 +16,7 @@
    along with this library; if not, see <http://www.gnu.org/licenses/>.
    ---------------------------------------------------------------------
 */
+
 package griffon.plugins.db4o
 
 import griffon.core.GriffonApplication
@@ -33,31 +34,16 @@ import com.db4o.config.EmbeddedConfiguration
  * @author Andres Almiray
  */
 @Singleton
-final class Db4oConnector {
+final class Db4oConnector implements Db4oProvider {
     private bootstrap
 
     private static final Log LOG = LogFactory.getLog(Db4oConnector)
-    
-    static void enhance(MetaClass mc) {
-        mc.withDb4o = {Closure closure ->
-            ObjectContainerHolder.instance.withDb4o('default', closure)   
-        }
-        mc.withDb4o << {String datasourceName, Closure closure ->
-            ObjectContainerHolder.instance.withDb4o(datasourceName, closure)   
-        }
-        mc.withDb4o << {CallableWithArgs callable ->
-            ObjectContainerHolder.instance.withDb4o('default', callable)   
-        }
-        mc.withDb4o << {String datasourceName, CallableWithArgs callable ->
-            ObjectContainerHolder.instance.withDb4o(datasourceName, callable)   
-        }       
-    }
 
     Object withDb4o(String dataSourceName = 'default', Closure closure) {
         ObjectContainerHolder.instance.withDb4o(datasourceName, closure) 
     }
 
-    Object withDb4o(String dataSourceName = 'default', CallableWithArgs callable) {
+    public <T> T withDb4o(String dataSourceName = 'default', CallableWithArgs<T> callable) {
         ObjectContainerHolder.instance.withDb4o(datasourceName, callable)
     }
 

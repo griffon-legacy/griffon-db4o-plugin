@@ -3,6 +3,7 @@ import com.db4o.config.EmbeddedConfiguration
 dataSource {
     delete = true
 }
+
 environments {
     development {
         dataSource {

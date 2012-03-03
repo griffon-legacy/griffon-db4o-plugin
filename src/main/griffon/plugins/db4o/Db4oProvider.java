@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------
    griffon-db4o plugin
-   Copyright (C) 2010 Andres Almiray
+   Copyright (C) 2012 Andres Almiray
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,19 +17,20 @@
    ---------------------------------------------------------------------
 */
 
+package griffon.plugins.db4o;
+
+import groovy.lang.Closure;
+import griffon.util.CallableWithArgs;
+
 /**
  * @author Andres Almiray
  */
+public interface Db4oProvider {
+    Object withDb4o(Closure closure);
 
-def eventClosure1 = binding.variables.containsKey('eventSetClasspath') ? eventSetClasspath : {cl->}
-eventSetClasspath = { cl ->
-    eventClosure1(cl)
-    if(compilingPlugin('db4o')) return
-    griffonSettings.dependencyManager.flatDirResolver name: 'griffon-db4o-plugin', dirs: "${db4oPluginDir}/addon"
-    griffonSettings.dependencyManager.addPluginDependency('db4o', [
-        conf: 'compile',
-        name: 'griffon-db4o-addon',
-        group: 'org.codehaus.griffon.plugins',
-        version: db4oPluginVersion
-    ])
+    Object withDb4o(String dataSourceName, Closure closure);
+
+    <T> T withDb4o(CallableWithArgs<T> callable);
+
+    <T> T withDb4o(String dataSourceName, CallableWithArgs<T> callable);
 }

@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------
    griffon-db4o plugin
-   Copyright (C) 2010 Andres Almiray
+   Copyright (C) 2010-2012 Andres Almiray
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -16,6 +16,7 @@
    along with this library; if not, see <http://www.gnu.org/licenses/>.
    ---------------------------------------------------------------------
 */
+
 package griffon.plugins.db4o
 
 import com.db4o.ObjectContainer
@@ -32,7 +33,7 @@ import org.apache.commons.logging.LogFactory
  * @author Andres Almiray
  */
 @Singleton
-class ObjectContainerHolder {
+class ObjectContainerHolder implements Db4oProvider {
     private static final Log LOG = LogFactory.getLog(ObjectContainerHolder)
     private static final Object[] LOCK = new Object[0]
     private final Map<String, ObjectContainer> dataSources = [:]
@@ -54,13 +55,13 @@ class ObjectContainerHolder {
 
     Object withDb4o(String dataSourceName = 'default', Closure closure) {
         ObjectContainer oc = fetchObjectContainer(dataSourceName)
-        if(LOG.debugEnabled) LOG.debug("Executing SQL statement on datasource '$dataSourceName'")
+        if(LOG.debugEnabled) LOG.debug("Executing Db4o statement on datasource '$dataSourceName'")
         return closure(dataSourceName, oc)
     }
 
-    Object withDb4o(String dataSourceName = 'default', CallableWithArgs callable) {
+    public <T> T withDb4o(String dataSourceName = 'default', CallableWithArgs<T> callable) {
         ObjectContainer oc = fetchObjectContainer(dataSourceName)
-        if(LOG.debugEnabled) LOG.debug("Executing SQL statement on datasource '$dataSourceName'")
+        if(LOG.debugEnabled) LOG.debug("Executing Db4o statement on datasource '$dataSourceName'")
         return callable.call([dataSourceName, oc] as Object[])
     }
     
