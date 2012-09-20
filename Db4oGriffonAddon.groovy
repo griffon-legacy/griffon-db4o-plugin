@@ -40,7 +40,7 @@ class Db4oGriffonAddon {
         }
     }
 
-    def events = [
+    Map events = [
         ShutdownStart: { app ->
             ConfigObject config = Db4oConnector.instance.createConfig(app)
             Db4oConnector.instance.disconnect(app, config)

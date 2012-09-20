@@ -23,6 +23,7 @@ import griffon.core.GriffonApplication
 import griffon.util.Metadata
 import griffon.util.Environment
 import griffon.util.CallableWithArgs
+import griffon.util.ConfigUtils
 
 import org.apache.commons.logging.Log
 import org.apache.commons.logging.LogFactory
@@ -48,13 +49,12 @@ final class Db4oConnector implements Db4oProvider {
     }
 
     // ======================================================
-  
+
     ConfigObject createConfig(GriffonApplication app) {
-        def db4oConfigClass = app.class.classLoader.loadClass('Db4oConfig')
-        return new ConfigSlurper(Environment.current.name).parse(db4oConfigClass)
-    }   
+        ConfigUtils.loadConfigWithI18n('Db4oConfig')
+    }
     
-    private ConfigObject narrowConfig(ConfigObject config, String dataSourceName) {   
+    private ConfigObject narrowConfig(ConfigObject config, String dataSourceName) {
         return dataSourceName == 'default' ? config.dataSource : config.dataSources[dataSourceName]
     }
 
@@ -62,7 +62,7 @@ final class Db4oConnector implements Db4oProvider {
         if(ObjectContainerHolder.instance.isObjectContainerConnected(dataSourceName)) {
             return ObjectContainerHolder.instance.getObjectContainer(dataSourceName)
         }
-        
+
         config = narrowConfig(config, dataSourceName)
         app.event('Db4oConnectStart', [config, dataSourceName])
         ObjectContainer oc = startObjectContainer(app, config, dataSourceName)

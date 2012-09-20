@@ -50,7 +50,7 @@ class ObjectContainerHolder implements Db4oProvider {
 
     void setObjectContainer(String dataSourceName = 'default', ObjectContainer oc) {
         if(isBlank(dataSourceName)) dataSourceName = 'default'
-        storeObjectContainer(dataSourceName, oc)       
+        storeObjectContainer(dataSourceName, oc)
     }
 
     Object withDb4o(String dataSourceName = 'default', Closure closure) {
@@ -64,12 +64,12 @@ class ObjectContainerHolder implements Db4oProvider {
         if(LOG.debugEnabled) LOG.debug("Executing Db4o statement on datasource '$dataSourceName'")
         return callable.call([dataSourceName, oc] as Object[])
     }
-    
+
     boolean isObjectContainerConnected(String dataSourceName) {
         if(isBlank(dataSourceName)) dataSourceName = 'default'
         retrieveObjectContainer(dataSourceName) != null
     }
-    
+
     void disconnectObjectContainer(String dataSourceName) {
         if(isBlank(dataSourceName)) dataSourceName = 'default'
         storeObjectContainer(dataSourceName, null)        

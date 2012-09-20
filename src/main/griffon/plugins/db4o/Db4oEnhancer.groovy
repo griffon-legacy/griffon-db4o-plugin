@@ -30,7 +30,7 @@ final class Db4oEnhancer {
     private static final Logger LOG = LoggerFactory.getLogger(Db4oEnhancer)
 
     private Db4oEnhancer() {}
-    
+
     static void enhance(MetaClass mc, Db4oProvider provider = ObjectContainerHolder.instance) {
         if(LOG.debugEnabled) LOG.debug("Enhancing $mc with $provider")
         mc.withDb4o = {Closure closure ->
