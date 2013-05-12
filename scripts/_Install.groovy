@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------
    griffon-db4o plugin
-   Copyright (C) 2010-2012 Andres Almiray
+   Copyright (C) 2010-2013 Andres Almiray
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -26,7 +26,7 @@ includeTargets << griffonScript("_GriffonCreateArtifacts")
 argsMap = argsMap ?: [:]
 argsMap.skipPackagePrompt = true
 
-if(!new File("${basedir}/griffon-app/conf/Db4oConfig.groovy").exists()) {
+if (!new File("${basedir}/griffon-app/conf/Db4oConfig.groovy").exists()) {
    createArtifact(
       name: "Db4oConfig",
       suffix: "",
@@ -34,7 +34,7 @@ if(!new File("${basedir}/griffon-app/conf/Db4oConfig.groovy").exists()) {
       path: "griffon-app/conf")
 }
 
-if(!new File("${basedir}/griffon-app/conf/BootstrapDb4o.groovy").exists()) {
+if (!new File("${basedir}/griffon-app/conf/BootstrapDb4o.groovy").exists()) {
    createArtifact(
       name: "BootstrapDb4o",
       suffix: "",

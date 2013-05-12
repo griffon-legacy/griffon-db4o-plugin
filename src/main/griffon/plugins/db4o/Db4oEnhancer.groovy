@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------
    griffon-db4o plugin
-   Copyright (C) 2012 Andres Almiray
+   Copyright (C) 2012-2013 Andres Almiray
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -27,20 +27,21 @@ import org.slf4j.LoggerFactory
  * @author Andres Almiray
  */
 final class Db4oEnhancer {
+    private static final String DEFAULT = 'default'
     private static final Logger LOG = LoggerFactory.getLogger(Db4oEnhancer)
 
     private Db4oEnhancer() {}
-
-    static void enhance(MetaClass mc, Db4oProvider provider = ObjectContainerHolder.instance) {
-        if(LOG.debugEnabled) LOG.debug("Enhancing $mc with $provider")
+    
+    static void enhance(MetaClass mc, Db4oProvider provider = DefaultDb4oProvider.instance) {
+        if (LOG.debugEnabled) LOG.debug("Enhancing $mc with $provider")
         mc.withDb4o = {Closure closure ->
-            provider.withDb4o('default', closure)
+            provider.withDb4o(DEFAULT, closure)
         }
         mc.withDb4o << {String dataSourceName, Closure closure ->
             provider.withDb4o(dataSourceName, closure)
         }
         mc.withDb4o << {CallableWithArgs callable ->
-            provider.withDb4o('default', callable)
+            provider.withDb4o(DEFAULT, callable)
         }
         mc.withDb4o << {String dataSourceName, CallableWithArgs callable ->
             provider.withDb4o(dataSourceName, callable)

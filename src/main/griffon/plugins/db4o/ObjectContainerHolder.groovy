@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------
    griffon-db4o plugin
-   Copyright (C) 2010-2012 Andres Almiray
+   Copyright (C) 2012-2013 Andres Almiray
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -23,82 +23,77 @@ import com.db4o.ObjectContainer
 
 import griffon.core.GriffonApplication
 import griffon.util.ApplicationHolder
-import griffon.util.CallableWithArgs
 import static griffon.util.GriffonNameUtils.isBlank
-
-import org.apache.commons.logging.Log
-import org.apache.commons.logging.LogFactory
 
 /**
  * @author Andres Almiray
  */
-@Singleton
-class ObjectContainerHolder implements Db4oProvider {
-    private static final Log LOG = LogFactory.getLog(ObjectContainerHolder)
+class ObjectContainerHolder {
+    private static final String DEFAULT = 'default'
     private static final Object[] LOCK = new Object[0]
-    private final Map<String, ObjectContainer> dataSources = [:]
-  
+    private final Map<String, ObjectContainer> containers = [:]
+
+    private static final ObjectContainerHolder INSTANCE
+
+    static {
+        INSTANCE = new ObjectContainerHolder()
+    }
+
+    static ObjectContainerHolder getInstance() {
+        INSTANCE
+    }
+
+    private ObjectContainerHolder() {}
+
     String[] getObjectContainerNames() {
-        List<String> dataSourceNames = new ArrayList().addAll(dataSources.keySet())
+        List<String> dataSourceNames = new ArrayList().addAll(containers.keySet())
         dataSourceNames.toArray(new String[dataSourceNames.size()])
     }
 
-    ObjectContainer getObjectContainer(String dataSourceName = 'default') {
-        if(isBlank(dataSourceName)) dataSourceName = 'default'
+    ObjectContainer getObjectContainer(String dataSourceName = DEFAULT) {
+        if (isBlank(dataSourceName)) dataSourceName = DEFAULT
         retrieveObjectContainer(dataSourceName)
     }
 
-    void setObjectContainer(String dataSourceName = 'default', ObjectContainer oc) {
-        if(isBlank(dataSourceName)) dataSourceName = 'default'
-        storeObjectContainer(dataSourceName, oc)
-    }
-
-    Object withDb4o(String dataSourceName = 'default', Closure closure) {
-        ObjectContainer oc = fetchObjectContainer(dataSourceName)
-        if(LOG.debugEnabled) LOG.debug("Executing Db4o statement on datasource '$dataSourceName'")
-        return closure(dataSourceName, oc)
-    }
-
-    public <T> T withDb4o(String dataSourceName = 'default', CallableWithArgs<T> callable) {
-        ObjectContainer oc = fetchObjectContainer(dataSourceName)
-        if(LOG.debugEnabled) LOG.debug("Executing Db4o statement on datasource '$dataSourceName'")
-        return callable.call([dataSourceName, oc] as Object[])
+    void setObjectContainer(String dataSourceName = DEFAULT, ObjectContainer container) {
+        if (isBlank(dataSourceName)) dataSourceName = DEFAULT
+        storeObjectContainer(dataSourceName, container)
     }
 
     boolean isObjectContainerConnected(String dataSourceName) {
-        if(isBlank(dataSourceName)) dataSourceName = 'default'
+        if (isBlank(dataSourceName)) dataSourceName = DEFAULT
         retrieveObjectContainer(dataSourceName) != null
     }
-
+    
     void disconnectObjectContainer(String dataSourceName) {
-        if(isBlank(dataSourceName)) dataSourceName = 'default'
-        storeObjectContainer(dataSourceName, null)        
+        if (isBlank(dataSourceName)) dataSourceName = DEFAULT
+        storeObjectContainer(dataSourceName, null)
     }
 
-    private ObjectContainer fetchObjectContainer(String dataSourceName) {
-        if(isBlank(dataSourceName)) dataSourceName = 'default'
-        ObjectContainer oc = retrieveObjectContainer(dataSourceName)
-        if(oc == null) {
+    ObjectContainer fetchObjectContainer(String dataSourceName) {
+        if (isBlank(dataSourceName)) dataSourceName = DEFAULT
+        ObjectContainer container = retrieveObjectContainer(dataSourceName)
+        if (container == null) {
             GriffonApplication app = ApplicationHolder.application
             ConfigObject config = Db4oConnector.instance.createConfig(app)
-            oc = Db4oConnector.instance.connect(app, config, dataSourceName)
+            container = Db4oConnector.instance.connect(app, config, dataSourceName)
         }
-        
-        if(oc == null) {
+
+        if (container == null) {
             throw new IllegalArgumentException("No such ObjectContainer configuration for name $dataSourceName")
         }
-        oc
+        container
     }
 
     private ObjectContainer retrieveObjectContainer(String dataSourceName) {
         synchronized(LOCK) {
-            dataSources[dataSourceName]
+            containers[dataSourceName]
         }
     }
 
-    private void storeObjectContainer(String dataSourceName, ObjectContainer oc) {
+    private void storeObjectContainer(String dataSourceName, ObjectContainer container) {
         synchronized(LOCK) {
-            dataSources[dataSourceName] = oc
+            containers[dataSourceName] = container
         }
     }
 }

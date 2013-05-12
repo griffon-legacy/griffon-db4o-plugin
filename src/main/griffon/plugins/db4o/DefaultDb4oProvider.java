@@ -19,18 +19,26 @@
 
 package griffon.plugins.db4o;
 
-import griffon.util.CallableWithArgs;
-import groovy.lang.Closure;
+import com.db4o.ObjectContainer;
 
 /**
  * @author Andres Almiray
  */
-public interface Db4oProvider {
-    <R> R withDb4o(Closure<R> closure);
+public class DefaultDb4oProvider extends AbstractDb4oProvider {
+    private static final DefaultDb4oProvider INSTANCE;
 
-    <R> R withDb4o(String dataSourceName, Closure<R> closure);
+    static {
+        INSTANCE = new DefaultDb4oProvider();
+    }
 
-    <R> R withDb4o(CallableWithArgs<R> callable);
+    public static DefaultDb4oProvider getInstance() {
+        return INSTANCE;
+    }
 
-    <R> R withDb4o(String dataSourceName, CallableWithArgs<R> callable);
+    private DefaultDb4oProvider() {}
+
+    @Override
+    protected ObjectContainer getObjectContainer(String dataSourceName) {
+        return ObjectContainerHolder.getInstance().fetchObjectContainer(dataSourceName);
+    }
 }

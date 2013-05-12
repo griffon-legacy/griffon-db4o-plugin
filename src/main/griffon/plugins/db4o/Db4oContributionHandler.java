@@ -25,7 +25,11 @@ import groovy.lang.Closure;
 /**
  * @author Andres Almiray
  */
-public interface Db4oProvider {
+public interface Db4oContributionHandler {
+    void setDb4oProvider(Db4oProvider provider);
+
+    Db4oProvider getDb4oProvider();
+
     <R> R withDb4o(Closure<R> closure);
 
     <R> R withDb4o(String dataSourceName, Closure<R> closure);

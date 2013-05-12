@@ -22,15 +22,37 @@ package griffon.plugins.db4o;
 import griffon.util.CallableWithArgs;
 import groovy.lang.Closure;
 
+import java.util.Map;
+
 /**
  * @author Andres Almiray
  */
-public interface Db4oProvider {
-    <R> R withDb4o(Closure<R> closure);
+public class Db4oContributionAdapter implements Db4oContributionHandler {
+    private static final String DEFAULT = "default";
 
-    <R> R withDb4o(String dataSourceName, Closure<R> closure);
+    private Db4oProvider provider = DefaultDb4oProvider.getInstance();
 
-    <R> R withDb4o(CallableWithArgs<R> callable);
+    public void setDb4oProvider(Db4oProvider provider) {
+        this.provider = provider != null ? provider : DefaultDb4oProvider.getInstance();
+    }
 
-    <R> R withDb4o(String dataSourceName, CallableWithArgs<R> callable);
+    public Db4oProvider getDb4oProvider() {
+        return provider;
+    }
+
+    public <R> R withDb4o(Closure<R> closure) {
+        return withDb4o(DEFAULT, closure);
+    }
+
+    public <R> R withDb4o(String dataSourceName, Closure<R> closure) {
+        return provider.withDb4o(dataSourceName, closure);
+    }
+
+    public <R> R withDb4o(CallableWithArgs<R> callable) {
+        return withDb4o(DEFAULT, callable);
+    }
+
+    public <R> R withDb4o(String dataSourceName, CallableWithArgs<R> callable) {
+        return provider.withDb4o(dataSourceName, callable);
+    }
 }

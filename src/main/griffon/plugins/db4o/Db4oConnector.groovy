@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------
    griffon-db4o plugin
-   Copyright (C) 2010-2012 Andres Almiray
+   Copyright (C) 2012-2013 Andres Almiray
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -20,13 +20,12 @@
 package griffon.plugins.db4o
 
 import griffon.core.GriffonApplication
-import griffon.util.Metadata
 import griffon.util.Environment
-import griffon.util.CallableWithArgs
+import griffon.util.Metadata
 import griffon.util.ConfigUtils
 
-import org.apache.commons.logging.Log
-import org.apache.commons.logging.LogFactory
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import com.db4o.*
 import com.db4o.config.EmbeddedConfiguration
@@ -35,76 +34,84 @@ import com.db4o.config.EmbeddedConfiguration
  * @author Andres Almiray
  */
 @Singleton
-final class Db4oConnector implements Db4oProvider {
+final class Db4oConnector {
+    private static final String DEFAULT = 'default'
+    private static final Logger LOG = LoggerFactory.getLogger(Db4oConnector)
     private bootstrap
 
-    private static final Log LOG = LogFactory.getLog(Db4oConnector)
-
-    Object withDb4o(String dataSourceName = 'default', Closure closure) {
-        ObjectContainerHolder.instance.withDb4o(datasourceName, closure) 
-    }
-
-    public <T> T withDb4o(String dataSourceName = 'default', CallableWithArgs<T> callable) {
-        ObjectContainerHolder.instance.withDb4o(datasourceName, callable)
-    }
-
-    // ======================================================
-
     ConfigObject createConfig(GriffonApplication app) {
-        ConfigUtils.loadConfigWithI18n('Db4oConfig')
-    }
-    
-    private ConfigObject narrowConfig(ConfigObject config, String dataSourceName) {
-        return dataSourceName == 'default' ? config.dataSource : config.dataSources[dataSourceName]
+        if (!app.config.pluginConfig.db4o) {
+            app.config.pluginConfig.db4o = ConfigUtils.loadConfigWithI18n('Db4oConfig')
+        }
+        app.config.pluginConfig.db4o
     }
 
-    ObjectContainer connect(GriffonApplication app, ConfigObject config, String dataSourceName = 'default') {
-        if(ObjectContainerHolder.instance.isObjectContainerConnected(dataSourceName)) {
+    private ConfigObject narrowConfig(ConfigObject config, String dataSourceName) {
+        if (config.containsKey('dataSource') && dataSourceName == DEFAULT) {
+            return config.dataSource
+        } else if (config.containsKey('dataSources')) {
+            return config.dataSources[dataSourceName]
+        }
+        return config
+    }
+
+    ObjectContainer connect(GriffonApplication app, ConfigObject config, String dataSourceName = DEFAULT) {
+        if (ObjectContainerHolder.instance.isObjectContainerConnected(dataSourceName)) {
             return ObjectContainerHolder.instance.getObjectContainer(dataSourceName)
         }
 
         config = narrowConfig(config, dataSourceName)
         app.event('Db4oConnectStart', [config, dataSourceName])
-        ObjectContainer oc = startObjectContainer(app, config, dataSourceName)
-        ObjectContainerHolder.instance.setObjectContainer(dataSourceName, oc)
+        ObjectContainer container = startDb4o(app, config)
+        ObjectContainerHolder.instance.setObjectContainer(dataSourceName, container)
         bootstrap = app.class.classLoader.loadClass('BootstrapDb4o').newInstance()
         bootstrap.metaClass.app = app
-        bootstrap.init(dataSourceName, oc)
-        app.event('Db4oConnectEnd', [dataSourceName, oc])
-        oc
+        resolveDb4oProvider(app).withDb4o { dn, c -> bootstrap.init(dn, c) }
+        app.event('Db4oConnectEnd', [dataSourceName, container])
+        container
     }
 
-    void disconnect(GriffonApplication app, ConfigObject config, String dataSourceName = 'default') {
-        if(ObjectContainerHolder.instance.isObjectContainerConnected(dataSourceName)) {
+    void disconnect(GriffonApplication app, ConfigObject config, String dataSourceName = DEFAULT) {
+        if (ObjectContainerHolder.instance.isObjectContainerConnected(dataSourceName)) {
             config = narrowConfig(config, dataSourceName)
-            ObjectContainer oc = ObjectContainerHolder.instance.getObjectContainer(dataSourceName)
-            app.event('Db4oDisconnectStart', [config, dataSourceName, oc])
-            bootstrap.destroy(dataSourceName, oc)
-            stopObjectContainer(config, dataSourceName)
+            ObjectContainer container = ObjectContainerHolder.instance.getObjectContainer(dataSourceName)
+            app.event('Db4oDisconnectStart', [config, dataSourceName, container])
+            resolveDb4oProvider(app).withDb4o { dn, c -> bootstrap.destroy(dn, c) }
+            stopDb4o(config, container)
             app.event('Db4oDisconnectEnd', [config, dataSourceName])
+            ObjectContainerHolder.instance.disconnectObjectContainer(dataSourceName)
         }
     }
 
-    private ObjectContainer startObjectContainer(GriffonApplication app, ConfigObject config, String dataSourceName) {
+    Db4oProvider resolveDb4oProvider(GriffonApplication app) {
+        def db4oProvider = app.config.db4oProvider
+        if (db4oProvider instanceof Class) {
+            db4oProvider = db4oProvider.newInstance()
+            app.config.db4oProvider = db4oProvider
+        } else if (!db4oProvider) {
+            db4oProvider = DefaultDb4oProvider.instance
+            app.config.db4oProvider = db4oProvider
+        }
+        db4oProvider
+    }
+
+    private ObjectContainer startDb4o(GriffonApplication app, ConfigObject config) {
         String dbfileName = config.name ?: 'db.yarv'
         File dbfile = new File(dbfileName)
-        if(!dbfile.absolute) dbfile = new File(Metadata.current.getGriffonWorkingDir(), dbfileName)
+        if (!dbfile.absolute) dbfile = new File(Metadata.current.getGriffonWorkingDir(), dbfileName)
         dbfile.parentFile.mkdirs()
-        Script configScript = app.class.classLoader.loadClass('Db4oConfig').newInstance()
         EmbeddedConfiguration configuration = Db4oEmbedded.newConfiguration()
-        configScript.configure(configuration)
+        app.event('Db4oConfigurationSetup', [config, configuration])
         return Db4oEmbedded.openFile(configuration, dbfile.absolutePath)
     }
 
-    private void stopObjectContainer(ConfigObject config, String dataSourceName) {
-        ObjectContainer oc = ObjectContainerHolder.instance.getObjectContainer(dataSourceName)
-        oc.close()
-        ObjectContainerHolder.instance.disconnectObjectContainer(dataSourceName)
+    private void stopDb4o(ConfigObject config, ObjectContainer container) {
+        container.close()
 
-        if(config.delete) {
+        if (config.delete) {
             String dbfileName = config.name ?: 'db.yarv'
             File dbfile = new File(dbfileName)
-            if(!dbfile.absolute) dbfile = new File(Metadata.current.getGriffonWorkingDir(), dbfileName)
+            if (!dbfile.absolute) dbfile = new File(Metadata.current.getGriffonWorkingDir(), dbfileName)
             dbfile.delete()
         }
     }

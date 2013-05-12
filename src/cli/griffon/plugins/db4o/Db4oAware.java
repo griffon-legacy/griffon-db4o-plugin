@@ -19,18 +19,21 @@
 
 package griffon.plugins.db4o;
 
-import griffon.util.CallableWithArgs;
-import groovy.lang.Closure;
+import org.codehaus.groovy.transform.GroovyASTTransformationClass;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
+ * <p>Annotates a class.</p>
+ *
  * @author Andres Almiray
+ * @see org.codehaus.griffon.ast.Db4oAwareASTTransformation
  */
-public interface Db4oProvider {
-    <R> R withDb4o(Closure<R> closure);
-
-    <R> R withDb4o(String dataSourceName, Closure<R> closure);
-
-    <R> R withDb4o(CallableWithArgs<R> callable);
-
-    <R> R withDb4o(String dataSourceName, CallableWithArgs<R> callable);
+@Retention(RetentionPolicy.SOURCE)
+@Target(ElementType.TYPE)
+@GroovyASTTransformationClass("org.codehaus.griffon.ast.Db4oAwareASTTransformation")
+public @interface Db4oAware {
 }
